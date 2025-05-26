@@ -40,12 +40,29 @@ void scan() {
     if (error == 0)
     {
       Serial.print("I2C device found at address 0x");
-      if (address<16)
+      if (address < 16)
         Serial.print("0");
-      Serial.print(address,HEX);
-      Serial.println("  !");
+      Serial.print(address, HEX);
+      Serial.print("  !");
 
-      nDevices++;
+      if (address == 0x27) {
+        Serial.print("  -> PCF IO Expander");
+      } else if (address == 0x28) {
+        Serial.print("  -> USB_PD");
+      }else if (address == 0x26) {
+        Serial.print("  -> MCP Expander");
+      }else if (address == 0x75) {
+        Serial.print("  -> Buck converter");
+      }else if (address == 0x40) {
+        Serial.print("  -> INA3221 ADC");
+      }else if (address == 0x6B) {
+        Serial.print("  -> Charger");
+      }else if (address == 0x55) {
+        Serial.print("  -> BMS");
+      }
+
+  Serial.println();
+  nDevices++;
     }
     else if (error==4)
     {
