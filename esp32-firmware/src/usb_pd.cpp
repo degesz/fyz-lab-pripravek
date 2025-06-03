@@ -15,14 +15,16 @@ void setup_usb(){
   } else {
     Serial.println(F("Connected to STUSB4500!"));
     delay(100);
-    // usb.write(DEFAULT); // Assuming DEFAULT is defined in SparkFun_STUSB4500.h or your code
+     usb.write(DEFAULT); // Assuming DEFAULT is defined in SparkFun_STUSB4500.h or your code
   }
 
+
+    
 
              usb.setPdoNumber(3); 
             Serial.println(F("STUSB4500: Set to request 9V if possible"));
             Serial.println();
-            usb.setVoltage(3, 9.0); // Example: try to set PDO3 to 9V
+            usb.setVoltage(3, 10.0); // Example: try to set PDO3 to 9V
              usb.softReset(); // This forces re-negotiation
              usb.write();
         

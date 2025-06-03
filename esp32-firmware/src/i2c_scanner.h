@@ -12,14 +12,6 @@
 // Set I2C bus to use: Wire, Wire1, etc.
 #define WIRE Wire
 
-void setup_scanner() {
-  WIRE.begin(GPIO_NUM_1, GPIO_NUM_0);
-
-  Serial.begin(115200);
-  while (!Serial)
-     delay(10);
-  Serial.println("\nI2C Scanner");
-}
 
 
 void scan() {
