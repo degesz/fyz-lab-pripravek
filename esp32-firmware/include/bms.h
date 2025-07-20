@@ -22,6 +22,8 @@
 #define CONTROL_SUBCMD_FETControl  0x0022  // Command to turn on FETs
 #define CONTROL_SUBCMD_DischargeFET  0x0020  // Command to turn on FETs
 #define CONTROL_SUBCMD_ChargeFET  0x001F  // Command to turn on FETs
+#define CONTROL_SUBCMD_Gauging  0x0021  // Command to turn on FETs
+#define CONTROL_SUBCMD_Reset  0x0041  // Command to turn on FETs
 
 
 void bms_print();

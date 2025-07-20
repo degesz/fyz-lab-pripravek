@@ -18,6 +18,7 @@ void setup_charger(){
   BQ25703Areg.chargeOption0.set_WDTMR_ADJ( 0 );
   BQ25703Areg.chargeOption0.set_EN_LWPWR( 0 );
   BQ25703Areg.chargeOption0.set_IDPM_AUTO_DISABLE( 0 );
+  BQ25703Areg.chargeOption0.set_EN_OOA( 1 );
   BQ25703A.writeRegEx( BQ25703Areg.chargeOption0 );
   delay( 15 );
 
@@ -80,10 +81,10 @@ void print_charger(){
     Serial.println( "mV" );
     delay( 15 );
 
-    Serial.print( "System power usage: " );
-    Serial.print( BQ25703Areg.aDCVBUSPSYS.get_sysPower() );
-    Serial.println( "W" );
-    delay( 15 );
+//    Serial.print( "System power usage: " );
+//    Serial.print( BQ25703Areg.aDCVBUSPSYS.get_sysPower() );
+//    Serial.println( "W" );
+//    delay( 15 );
 
     Serial.print( "Voltage of VBAT: " );
     Serial.print( BQ25703Areg.aDCVSYSVBAT.get_VBAT() );
@@ -118,8 +119,7 @@ void print_charger(){
  //   uint8_t msb = Wire.read();
  //   Serial.println(((uint16_t)msb << 8) | lsb, HEX); // spojíme MSB a LSB
  // }
-  Serial.println();
-  Serial.println();
+
 }
 
 
