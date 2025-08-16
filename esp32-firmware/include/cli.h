@@ -2,7 +2,6 @@
 
 #include <Arduino.h>
 #include <SimpleCLI.h>
-#include "bms.h"
 #include "converter.h"
 
 extern bool stopLoop;

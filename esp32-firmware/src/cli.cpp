@@ -50,41 +50,7 @@ void handle_cli(){
     if (cmd == ping) {
       Serial.println("Pong!");
 
-    } else if (cmd == fetctrl) {
-      Serial.println("fet control toggled");
-            Wire.beginTransmission(BQ28Z610_ADDRESS);
-            Wire.write(CONTROL_CMD);  // Command register
-            Wire.write(CONTROL_SUBCMD_FETControl & 0xFF);        // LSB
-            Wire.write((CONTROL_SUBCMD_FETControl >> 8) & 0xFF); // MSB
-            Wire.endTransmission();
-    } else if (cmd == fetc) {
-      Serial.println("charging fet toggled");
-            Wire.beginTransmission(BQ28Z610_ADDRESS);
-            Wire.write(CONTROL_CMD);  // Command register
-            Wire.write(CONTROL_SUBCMD_ChargeFET & 0xFF);        // LSB
-            Wire.write((CONTROL_SUBCMD_ChargeFET >> 8) & 0xFF); // MSB
-            Wire.endTransmission();
-    } else if (cmd == fetd) {
-      Serial.println("discharging fet toggled");
-            Wire.beginTransmission(BQ28Z610_ADDRESS);
-            Wire.write(CONTROL_CMD);  // Command register
-            Wire.write(CONTROL_SUBCMD_DischargeFET& 0xFF);        // LSB
-            Wire.write((CONTROL_SUBCMD_DischargeFET >> 8) & 0xFF); // MSB
-            Wire.endTransmission();
-    } else if (cmd == gauging) {
-      Serial.println("gauging toggled");
-            Wire.beginTransmission(BQ28Z610_ADDRESS);
-            Wire.write(CONTROL_CMD);  // Command register
-            Wire.write(CONTROL_SUBCMD_Gauging& 0xFF);        // LSB
-            Wire.write((CONTROL_SUBCMD_Gauging >> 8) & 0xFF); // MSB
-            Wire.endTransmission();
-        } else if (cmd == reset) {
-      Serial.println("BMS device reset");
-            Wire.beginTransmission(BQ28Z610_ADDRESS);
-            Wire.write(CONTROL_CMD);  // Command register
-            Wire.write(CONTROL_SUBCMD_Reset& 0xFF);        // LSB
-            Wire.write((CONTROL_SUBCMD_Reset >> 8) & 0xFF); // MSB
-            Wire.endTransmission();
+    
     } else if (cmd == out) {
         Argument voltage = cmd.getArg("v");
         Argument current = cmd.getArg("i");

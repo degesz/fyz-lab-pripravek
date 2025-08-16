@@ -9,8 +9,14 @@ Lorro_BQ25703A BQ25703A;
 Lorro_BQ25703A::Regt BQ25703Areg;
 
 void setup_charger(){
+ Wire.beginTransmission(0x6B);
+  byte error = Wire.endTransmission();
 
-   BQ25703Areg.minSystemVoltage.set_voltage(6144);
+  if (error == 0) {
+   // Serial.println("Charger found!");
+
+
+BQ25703Areg.minSystemVoltage.set_voltage(6144);
    BQ25703A.writeRegEx( BQ25703Areg.minSystemVoltage );
   delay( 15 );
 
@@ -66,6 +72,18 @@ BQ25703Areg.maxChargeVoltage.set_voltage( 8400 );
   BQ25703A.writeRegEx( BQ25703Areg.chargeCurrent );
   delay( 15 );
 
+
+
+
+
+
+
+  } else {
+    Serial.println("Charger not connected, stopping program.");
+    while (1);
+    
+  }
+   
 
 }
 

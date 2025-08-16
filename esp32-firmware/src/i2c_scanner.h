@@ -9,11 +9,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-// Set I2C bus to use: Wire, Wire1, etc.
-#define WIRE Wire
-
-
-
 void scan() {
   byte error, address;
   int nDevices;
@@ -26,8 +21,8 @@ void scan() {
     // The i2c_scanner uses the return value of
     // the Write.endTransmisstion to see if
     // a device did acknowledge to the address.
-    WIRE.beginTransmission(address);
-    error = WIRE.endTransmission();
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
 
     if (error == 0)
     {
@@ -63,6 +58,15 @@ void scan() {
         Serial.print("0");
       Serial.println(address,HEX);
     }
+   // else
+   // {
+   //   Serial.print("ERROR 0x");
+   //   if (address<16)
+   //     Serial.print("0");
+   //   Serial.print(address,HEX);
+   //   Serial.print("  error: ");
+   //   Serial.println(error);
+   // }
   }
   if (nDevices == 0)
     Serial.println("No I2C devices found\n");

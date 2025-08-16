@@ -6,7 +6,7 @@ Adafruit_INA3221 ina3221;
 void measurement_setup(){
 // Initialize the INA3221
   if (!ina3221.begin(0x40, &Wire)) { // can use other I2C addresses or buses
-    Serial.println("Failed to find INA3221 chip");
+    Serial.println("Failed to find INA3221 chip, stopping program");
     while (1)
       delay(10);
   }
