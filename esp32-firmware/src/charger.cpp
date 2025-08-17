@@ -60,14 +60,14 @@ BQ25703Areg.minSystemVoltage.set_voltage(6144);
 
 
 
-BQ25703Areg.maxChargeVoltage.set_voltage( 8400 );
+BQ25703Areg.maxChargeVoltage.set_voltage( 8380 );
   delay( 15 );
   BQ25703A.writeRegEx( BQ25703Areg.maxChargeVoltage );
   delay( 15 );
   //Sets the charge current. This needs to be set before any charging of
   //the batteries starts, as it is defaulted to 0. Any value entered will
   //be rounded to multiples of 64mA.
-  BQ25703Areg.chargeCurrent.set_current( 800 );
+  BQ25703Areg.chargeCurrent.set_current( 1000 );
   delay( 15 );
   BQ25703A.writeRegEx( BQ25703Areg.chargeCurrent );
   delay( 15 );
@@ -107,24 +107,24 @@ void print_charger(){
     Serial.print( "Voltage of VBAT: " );
     Serial.print( BQ25703Areg.aDCVSYSVBAT.get_VBAT() );
     Serial.println( "mV" );
-    delay( 15 );
+  //  delay( 15 );
 
     Serial.print( "Voltage of VSYS: " );
     Serial.print( BQ25703Areg.aDCVSYSVBAT.get_VSYS() );
     Serial.println( "mV" );
-    delay( 15 );
+  //  delay( 15 );
 
     Serial.print( "Charging current: " );
     Serial.print( BQ25703Areg.aDCIBAT.get_ICHG() );
     Serial.println( "mA" );
-    delay( 15 );
+  //  delay( 15 );
 
-    Serial.print( "Discharge current: " );
-    Serial.print( BQ25703Areg.aDCIBAT.get_IDCHG() );
-    Serial.println( "mA" );
-    delay( 15 );
+  //  Serial.print( "Discharge current: " );
+  //  Serial.print( BQ25703Areg.aDCIBAT.get_IDCHG() );
+  //  Serial.println( "mA" );
+  //  delay( 15 );
 
-  Serial.println("----------------");
+
 
 
  // Wire.beginTransmission(BQ25703ADevaddr);

@@ -47,6 +47,9 @@ void scan() {
       }else if (address == 0x55) {
         Serial.print("  -> BMS");
       }
+      else if (address == 0x74) {
+        Serial.print("  -> BUCK CONVERTER WRONG ADDR");
+      }
 
   Serial.println();
   nDevices++;

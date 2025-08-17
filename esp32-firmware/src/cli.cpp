@@ -5,22 +5,15 @@ SimpleCLI cli;
 
 // Commands
 Command ping;
-Command fetctrl;
-Command fetc;
-Command fetd;
+
 Command out;
 Command halt;
-Command gauging;
 Command reset;
 
 void setup_cli(){
   ping = cli.addCmd("ping");
-  fetctrl = cli.addCmd("fetctrl");
-  fetc = cli.addCmd("fetc");
-  fetd = cli.addCmd("fetd");
   out = cli.addCmd("out");
   halt = cli.addCmd("halt");
-  gauging = cli.addCmd("gauging");
   reset = cli.addCmd("reset");
 
   out.addArg("v", "NAN");
@@ -74,6 +67,9 @@ void handle_cli(){
         Serial.println("unpausing loop");
         stopLoop = 0;
       }
+    } 
+    else if (cmd == reset) {
+      ESP.restart();
     } 
   }
 

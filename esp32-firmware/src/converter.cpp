@@ -16,8 +16,21 @@ void TPS55288::begin() {
  pinMode(GPIO_NUM_18, INPUT_PULLUP);
 // digitalWrite(GPIO_NUM_18, HIGH);
 
-  writeRegister(TPS55288_MODE, 0xA7);
-  delay(100);
+  //writeRegister(TPS55288_MODE, 0xA7);
+  uint8_t mode_value;
+  
+  mode_value |= (0 << 7);  // Set bit 7 (OE - Output Enable) to 0
+  mode_value |= (0 << 6);  // Set bit 6 (frequency doubling) to 0
+  mode_value |= (1 << 5);  // Set bit 5 (Hiccup mode) to 1
+  mode_value |= (0 << 4);  // Set bit 4 (output discharge) to 0
+  mode_value |= (0 << 3);  // Set bit 3 (vcc source 0=internal 1 = external) to 0
+  mode_value |= (1 << 2);  // Set bit 2 (I2C addr 1 = 0x75)  to 1
+  mode_value |= (1 << 1);  // Set bit 1 (0=PFM, 1=PWM) to 1
+  mode_value |= (1 << 0);  // Set bit 0 (mode setting 1 = software) to 1
+ 
+   writeRegister(TPS55288_MODE, mode_value);
+  delay(10);
+  return;
 }
 
 /**
@@ -61,11 +74,16 @@ bool TPS55288::setVoltage(float voltage) {
   return success;
 }
 
-/**
- * @brief Sets the output current limit register.
- */
-bool TPS55288::setCurrentLimit(uint8_t current_limit_register_value) {
-  // Writes the given 8-bit value to the IOUT_LIMIT register (0x02)
+
+bool TPS55288::setCurrentLimit(float current) {
+
+  uint8_t current_limit_register_value = (current + 56) / 44;
+
+  // Ensure highest bit (bit 7) is always set to enable the current limiting
+  current_limit_register_value |= (1 << 7);
+  Serial.print("Setting current limit:");
+  Serial.println(current_limit_register_value);
+  // Writes the modified 8-bit value to the IOUT_LIMIT register (0x02)
   return writeRegister(TPS55288_IOUT_LIMIT, current_limit_register_value);
 }
 
@@ -85,6 +103,7 @@ bool TPS55288::enable() {
   // Write the modified value back to the MODE register
   return writeRegister(TPS55288_MODE, mode_value);
 }
+
 
 /**
  * @brief Disables the converter output by clearing the OE bit in the MODE register.

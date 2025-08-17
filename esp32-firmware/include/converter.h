@@ -46,14 +46,10 @@ public:
   bool setVoltage(float voltage);
 
   /**
-   * @brief Sets the output current limit settings.
-   * @param current_limit_register_value An 8-bit value for the IOUT_LIMIT register (0x02).
-   * bit 7: 1 = enable, 0 = disable.
-   * bits 6-0: Sets limit from 0 to 63.5mV in 0.5mV steps.
-   * Refer to page 28 of the datasheet for detailed calculation.
-   * @return True if the current limit was set successfully, false otherwise.
+   * @brief Sets the output current limit settings. Low precision, value gets rounded to cca 50 mA steps
+   * @param current value in mA
    */
-  bool setCurrentLimit(uint8_t current_limit_register_value);
+  bool setCurrentLimit(float current);
 
   /**
    * @brief Enables the converter's output.
