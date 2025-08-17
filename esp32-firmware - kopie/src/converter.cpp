@@ -3,8 +3,7 @@
 /**
  * @brief Constructor for the TPS55288 class.
  */
-TPS55288::TPS55288(TwoWire &wire)
-{
+TPS55288::TPS55288(TwoWire &wire) {
   _wire = &wire;
   _deviceAddress = TPS55288_I2C_ADDRESS;
 }
@@ -12,26 +11,26 @@ TPS55288::TPS55288(TwoWire &wire)
 /**
  * @brief Initializes the I2C communication.
  */
-void TPS55288::begin()
-{
-  // _wire->begin();
-  pinMode(GPIO_NUM_18, INPUT_PULLUP);
-  digitalWrite(GPIO_NUM_18, HIGH);
-  delay(10);
+void TPS55288::begin() {
+    // _wire->begin();
+ pinMode(GPIO_NUM_18, INPUT_PULLUP);
+ digitalWrite(GPIO_NUM_18, HIGH);
+ delay(10);
+  //writeRegister(TPS55288_MODE, 0xA7);
   uint8_t mode_value;
-
-  mode_value |= (0 << 7); // Set bit 7 (OE - Output Enable) to 0
-  mode_value |= (0 << 6); // Set bit 6 (frequency doubling) to 0
-  mode_value |= (1 << 5); // Set bit 5 (Hiccup mode) to 1
-  mode_value |= (0 << 4); // Set bit 4 (output discharge) to 0
-  mode_value |= (0 << 3); // Set bit 3 (vcc source 0=internal 1 = external) to 0
-  mode_value |= (1 << 2); // Set bit 2 (I2C addr 1 = 0x75)  to 1
-  mode_value |= (1 << 1); // Set bit 1 (0=PFM, 1=PWM) to 1
-  mode_value |= (1 << 0); // Set bit 0 (mode setting 1 = software) to 1
-
-  writeRegister(TPS55288_MODE, mode_value);
+  
+  mode_value |= (0 << 7);  // Set bit 7 (OE - Output Enable) to 0
+  mode_value |= (0 << 6);  // Set bit 6 (frequency doubling) to 0
+  mode_value |= (1 << 5);  // Set bit 5 (Hiccup mode) to 1
+  mode_value |= (0 << 4);  // Set bit 4 (output discharge) to 0
+  mode_value |= (0 << 3);  // Set bit 3 (vcc source 0=internal 1 = external) to 0
+  mode_value |= (1 << 2);  // Set bit 2 (I2C addr 1 = 0x75)  to 1
+  mode_value |= (1 << 1);  // Set bit 1 (0=PFM, 1=PWM) to 1
+  mode_value |= (1 << 0);  // Set bit 0 (mode setting 1 = software) to 1
+ 
+   writeRegister(TPS55288_MODE, mode_value);
   delay(10);
-  digitalWrite(GPIO_NUM_18, LOW);
+   digitalWrite(GPIO_NUM_18, LOW);
   return;
 }
 
@@ -45,8 +44,7 @@ void TPS55288::begin()
  * The calculated VREF is then converted to a 10-bit DAC value.
  * DAC_value = (VREF_in_mV - 45mV) / 1.129mV_per_step
  */
-bool TPS55288::setVoltage(float voltage)
-{
+bool TPS55288::setVoltage(float voltage) {
   if (!enabled)
   {
     Serial.println("Convertor disabled");
@@ -61,20 +59,18 @@ bool TPS55288::setVoltage(float voltage)
 
   // Calculate the 10-bit DAC value based on the formula derived from datasheet page 27
   uint16_t dac_value = 0;
-  if (vref_mv > VREF_MIN_MV)
-  {
+  if (vref_mv > VREF_MIN_MV) {
     dac_value = (uint16_t)roundf((vref_mv - VREF_MIN_MV) / VREF_STEP_MV);
   }
 
   // Clamp the value to the 10-bit range (0-1023)
-  if (dac_value > 1023)
-  {
+  if (dac_value > 1023) {
     dac_value = 1023;
   }
 
   // Split the 10-bit value into two bytes for the REF registers
-  uint8_t ref_lsb = dac_value & 0xFF;        // Lower 8 bits go to register 0x00
-  uint8_t ref_msb = (dac_value >> 8) & 0x03; // Upper 2 bits go to register 0x01
+  uint8_t ref_lsb = dac_value & 0xFF;         // Lower 8 bits go to register 0x00
+  uint8_t ref_msb = (dac_value >> 8) & 0x03;  // Upper 2 bits go to register 0x01
 
   // Write the values to the registers.
   // Per datasheet (p. 27), writing to 0x01 triggers the update. So we write LSB then MSB.
@@ -84,8 +80,8 @@ bool TPS55288::setVoltage(float voltage)
   return success;
 }
 
-bool TPS55288::setCurrentLimit(float current)
-{
+
+bool TPS55288::setCurrentLimit(float current) {
   if (!enabled)
   {
     Serial.println("Convertor disabled");
@@ -104,15 +100,13 @@ bool TPS55288::setCurrentLimit(float current)
 /**
  * @brief Enables the converter output by setting the OE bit in the MODE register.
  */
-bool TPS55288::enable()
-{
+bool TPS55288::enable() {
   enabled = true;
-  digitalWrite(GPIO_NUM_13, HIGH);
+  digitalWrite(GPIO_NUM_13, HIGH); 
   delay(10);
   uint8_t mode_value;
   // Read the current value of the MODE register (0x06)
-  if (!readRegister(TPS55288_MODE, mode_value))
-  {
+  if (!readRegister(TPS55288_MODE, mode_value)) {
     return false; // I2C read failed
   }
 
@@ -123,17 +117,16 @@ bool TPS55288::enable()
   return writeRegister(TPS55288_MODE, mode_value);
 }
 
+
 /**
  * @brief Disables the converter output by clearing the OE bit in the MODE register.
  */
-bool TPS55288::disable()
-{
+bool TPS55288::disable() {
   enabled = false;
-
+  
   uint8_t mode_value;
   // Read the current value of the MODE register (0x06)
-  if (!readRegister(TPS55288_MODE, mode_value))
-  {
+  if (!readRegister(TPS55288_MODE, mode_value)) {
     return false; // I2C read failed
   }
 
@@ -141,63 +134,52 @@ bool TPS55288::disable()
   mode_value &= ~(1 << 7);
   bool result = writeRegister(TPS55288_MODE, mode_value);
   // Write the modified value back to the MODE register
-  digitalWrite(GPIO_NUM_13, LOW);
+  digitalWrite(GPIO_NUM_13, LOW); 
   return result;
 }
 
 /**
  * @brief Reads the status register.
  */
-uint8_t TPS55288::getStatus()
-{
+uint8_t TPS55288::getStatus() {
   uint8_t status_val = 0;
   // Read from the correct STATUS register address (0x07)
-  if (readRegister(TPS55288_STATUS, status_val))
-  {
+  if (readRegister(TPS55288_STATUS, status_val)) {
     return status_val;
   }
   return 0xFF; // Return 0xFF to indicate a read error
 }
 
-void TPS55288::print_converter()
-{
+void TPS55288::print_converter(){
   if (!enabled)
   {
     Serial.println("Convertor disabled");
     return;
   }
-
+  
   uint8_t status = getStatus();
-  switch (status & 0x03)
-  {
-  case 0:
-    Serial.println("Mode: Boost");
-    break;
-  case 1:
-    Serial.println("Mode: Buck");
-    break;
-  case 2:
-    Serial.println("Mode: Buck-Boost");
-    break;
-  default:
-    Serial.println("Mode: Reserved");
-    break;
+  switch (status & 0x03) {
+  case 0: Serial.println("Mode: Boost"); break;
+  case 1: Serial.println("Mode: Buck"); break;
+  case 2: Serial.println("Mode: Buck-Boost"); break;
+  default: Serial.println("Mode: Reserved"); break;
   }
 
-  if (status & (1 << 7))
-    Serial.println("SHORT CIRCUIT PROTECTION ACTIVE");
-  if (status & (1 << 6))
-    Serial.println("OVERCURRENT PROTECTION ACTIVE");
-  if (status & (1 << 5))
-    Serial.println("OVERVOLTAGE PROTECTION ACTIVE");
+  if (status & (1 << 7)) Serial.println("SHORT CIRCUIT PROTECTION ACTIVE");
+  if (status & (1 << 6)) Serial.println("OVERCURRENT PROTECTION ACTIVE");
+  if (status & (1 << 5)) Serial.println("OVERVOLTAGE PROTECTION ACTIVE");
 
+  //  // Read and print status
+  //  uint8_t status = converter.getStatus();
+  //  Serial.print("Converter Status Register (0x07): 0x");
+  //  Serial.println(status, HEX);
 }
+
 
 /**
  * @brief Writes a byte to a register.
  */
-bool TPS55288::writeRegister(uint8_t reg, uint8_t value)
-{
+bool TPS55288::writeRegister(uint8_t reg, uint8_t value) {
   _wire->beginTransmission(_deviceAddress);
   _wire->write(reg);
   _wire->write(value);
@@ -207,17 +189,14 @@ bool TPS55288::writeRegister(uint8_t reg, uint8_t value)
 /**
  * @brief Reads a byte from a register.
  */
-bool TPS55288::readRegister(uint8_t reg, uint8_t &value)
-{
+bool TPS55288::readRegister(uint8_t reg, uint8_t &value) {
   _wire->beginTransmission(_deviceAddress);
   _wire->write(reg);
-  if (_wire->endTransmission(false) != 0)
-  { // Send restart condition
+  if (_wire->endTransmission(false) != 0) { // Send restart condition
     return false;
   }
 
-  if (_wire->requestFrom((uint8_t)_deviceAddress, (uint8_t)1) != 1)
-  {
+  if (_wire->requestFrom((uint8_t)_deviceAddress, (uint8_t)1) != 1) {
     return false;
   }
 

@@ -114,7 +114,6 @@ void print_charger() {
   Serial.print(ichg_ma);
   Serial.println("mA");
 }
-
 const uint8_t bq25703aRegisters[] = {
   CHARGE_OPTION_0_REG,
   MAX_CHARGE_VOLTAGE_REG,
