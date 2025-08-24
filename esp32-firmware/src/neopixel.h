@@ -15,6 +15,9 @@ uint8_t baseBlue  = 30;
 uint8_t maxBrightness = 60;   // Max brightness (0–255)
 uint16_t breathSpeed = 2000;   // half cycle in ms 
 
+
+
+
 // ==== Internal variables ====
 //unsigned long lastUpdate = 0;
 

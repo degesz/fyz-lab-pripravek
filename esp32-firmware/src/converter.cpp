@@ -12,28 +12,32 @@ TPS55288::TPS55288(TwoWire &wire)
 /**
  * @brief Initializes the I2C communication.
  */
-void TPS55288::begin()
-{
-  // _wire->begin();
-  pinMode(GPIO_NUM_18, INPUT_PULLUP);
-  digitalWrite(GPIO_NUM_18, HIGH);
-  delay(10);
-  uint8_t mode_value;
-
-  mode_value |= (0 << 7); // Set bit 7 (OE - Output Enable) to 0
-  mode_value |= (0 << 6); // Set bit 6 (frequency doubling) to 0
-  mode_value |= (1 << 5); // Set bit 5 (Hiccup mode) to 1
-  mode_value |= (0 << 4); // Set bit 4 (output discharge) to 0
-  mode_value |= (0 << 3); // Set bit 3 (vcc source 0=internal 1 = external) to 0
-  mode_value |= (1 << 2); // Set bit 2 (I2C addr 1 = 0x75)  to 1
-  mode_value |= (1 << 1); // Set bit 1 (0=PFM, 1=PWM) to 1
-  mode_value |= (1 << 0); // Set bit 0 (mode setting 1 = software) to 1
-
-  writeRegister(TPS55288_MODE, mode_value);
-  delay(10);
-  digitalWrite(GPIO_NUM_18, LOW);
-  return;
-}
+//void TPS55288::begin()
+//{
+//
+//  uint8_t mode_value;
+//
+//  mode_value |= (0 << 7); // Set bit 7 (OE - Output Enable) to 0
+//  mode_value |= (0 << 6); // Set bit 6 (frequency doubling) to 0
+//  mode_value |= (1 << 5); // Set bit 5 (Hiccup mode) to 1
+//  mode_value |= (0 << 4); // Set bit 4 (output discharge) to 0
+//  mode_value |= (0 << 3); // Set bit 3 (vcc source 0=internal 1 = external) to 0
+//  mode_value |= (1 << 2); // Set bit 2 (I2C addr 1 = 0x75)  to 1
+//  mode_value |= (1 << 1); // Set bit 1 (0=PFM, 1=PWM) to 1
+//  mode_value |= (1 << 0); // Set bit 0 (mode setting 1 = software) to 1
+//
+//  Serial.print("setup reg: ");
+//  Serial.println(mode_value, BIN);
+//  if (!writeRegister(TPS55288_MODE, mode_value))
+//  {
+//    Serial.println("Converter begin fail, stopping");
+//    while(1);
+//  }
+//  
+//  delay(10);
+//  digitalWrite(GPIO_NUM_13, LOW);
+//  return;
+//}
 
 /**
  * @brief Sets the output voltage.
@@ -116,8 +120,15 @@ bool TPS55288::enable()
     return false; // I2C read failed
   }
 
-  // Set bit 7 (OE - Output Enable) to 1
-  mode_value |= (1 << 7);
+  mode_value |= (1 << 7); // Set bit 7 (OE - Output Enable) to 0
+  mode_value |= (0 << 6); // Set bit 6 (frequency doubling) to 0
+  mode_value |= (1 << 5); // Set bit 5 (Hiccup mode) to 1
+  mode_value |= (0 << 4); // Set bit 4 (output discharge) to 0
+  mode_value |= (0 << 3); // Set bit 3 (vcc source 0=internal 1 = external) to 0
+  mode_value |= (1 << 2); // Set bit 2 (I2C addr 1 = 0x75)  to 1
+  mode_value |= (1 << 1); // Set bit 1 (0=PFM, 1=PWM) to 1
+  mode_value |= (1 << 0); // Set bit 0 (mode setting 1 = software) to 1
+
 
   // Write the modified value back to the MODE register
   return writeRegister(TPS55288_MODE, mode_value);
