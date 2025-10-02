@@ -34,6 +34,7 @@
 #define CHG_OPT0_EN_LWPWR           (1 << 15) // Enable low power mode
 #define CHG_OPT0_WDTMR_ADJ_DISABLE  (0 << 13)
 #define CHG_OPT0_EN_OOA             (1 << 10) // Out of audio switch frequency
+#define CHG_OPT0_FREQ_HIGH          (0 << 9)
 
 // Bitmasks for CHARGE_OPTION_1_REG (0x30)
 #define CHARGE_OPTION_1_DEFAULT     0x0211

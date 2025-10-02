@@ -38,6 +38,7 @@ void setup_charger() {
     charge_option_0 &= ~CHG_OPT0_EN_LWPWR; // Disable low power mode
     charge_option_0 |= CHG_OPT0_WDTMR_ADJ_DISABLE;
     charge_option_0 |= CHG_OPT0_EN_OOA;
+    charge_option_0 |= CHG_OPT0_FREQ_HIGH;
     write_register(CHARGE_OPTION_0_REG, charge_option_0);
     delay(15);
 

@@ -9,17 +9,12 @@
 #include "cli.h"
 #include "converter.h"
 #include "measurement.h"
+#include "display.h"
 
 TPS55288 converter;
 
+
 bool stopLoop = 0;
-
-
-volatile bool usbAlertFlag = false;
-#define USB_ALERT_PIN GPIO_NUM_8
-void IRAM_ATTR onUsbAlert() {
-  usbAlertFlag = true;
-}
 
 
 void print_info()
@@ -36,17 +31,16 @@ void print_info()
 
 Ticker timer_print(print_info, 700, 0, MILLIS);
 Ticker timer_LED(update_neopixel, 30, 0, MILLIS);
+//Ticker timer_display(update_display, 200, 0, MILLIS);
 
 void setup()
 {
-  pinMode(USB_ALERT_PIN, INPUT_PULLUP);
-  attachInterrupt(USB_ALERT_PIN, onUsbAlert, FALLING);
 
   pinMode(GPIO_NUM_13, OUTPUT);   // turn on converter so it can be scanned
   digitalWrite(GPIO_NUM_13, HIGH);
   delay(10);
 
-  Wire.begin(GPIO_NUM_34, GPIO_NUM_33);
+  Wire.begin(GPIO_NUM_34, GPIO_NUM_33, 100000);
 
   Serial.begin(115200);
   while (!Serial)
@@ -55,25 +49,31 @@ void setup()
 
   delay(200);
 
-  Serial.println(F("Scanning I2C bus..."));
-  scan(); // scan the I2C bus
+  //  Serial.println(F("Scanning I2C bus..."));
+  //  scan(); // scan the I2C bus
   delay(100);
   digitalWrite(GPIO_NUM_13, LOW);   // turn off converter
 
   
   
-
+  setup_display();
+  //show_splashscreen();
   setup_neopixel();
   setup_usb();
   setup_cli();
   setup_charger();
   measurement_setup();
+  
   //converter.begin();
   
+   
 
+ timer_print.start();
+ timer_LED.start();
+ //timer_display.start();
 
-  timer_print.start();
-  timer_LED.start();
+ delay(100);
+ ui_init();
 }
 
 void loop()
@@ -83,17 +83,13 @@ void loop()
   {
     handle_cli();
   }
-
+  
   handle_cli();
   timer_print.update();
   timer_LED.update();
-
-
-
-  if (usbAlertFlag) {
-    usbAlertFlag = false;
-    Serial.println("USB ALERT -----------------USB ALERT -----------------USB ALERT -----------------");
-    setup_usb();
-  }
+ //timer_display.start();
+  //update_display();
+  lv_timer_handler(); /* let the GUI do its work */
+  ui_tick();
 
 }
