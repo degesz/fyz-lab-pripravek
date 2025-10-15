@@ -16,12 +16,20 @@ void measurement_setup(){
   ina3221.setShuntResistance(1, 0.05);
   ina3221.setShuntResistance(2, 1);
 
+
   // Set a power valid alert to tell us if ALL channels are between the two
   // limits:
   //ina3221.setPowerValidLimits(3.0 /* lower limit */, 15.0 /* upper limit */);
 }
 
 
+// returns array of floats, in volts and miliamps
+void getMeasurements(float* voltages, float* currents) {
+  for (uint8_t i = 0; i < 3; i++) {
+    voltages[i] = ina3221.getBusVoltage(i);
+    currents[i] = ina3221.getCurrentAmps(i) * 1000; // Convert to mA
+  }
+}
 
 void printMeasurements(){
   for (uint8_t i = 0; i < 3; i++) {

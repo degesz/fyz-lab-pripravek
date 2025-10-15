@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include "Ticker.h"
 
+
 #include "neopixel.h"
 #include "i2c_scanner.h"
 #include "usb_pd.h"
@@ -10,6 +11,8 @@
 #include "converter.h"
 #include "measurement.h"
 #include "display.h"
+
+#include <ui.h>
 
 TPS55288 converter;
 
@@ -31,11 +34,11 @@ void print_info()
 
 Ticker timer_print(print_info, 700, 0, MILLIS);
 Ticker timer_LED(update_neopixel, 30, 0, MILLIS);
-//Ticker timer_display(update_display, 200, 0, MILLIS);
+Ticker timer_display_update(update_display, 200, 0, MILLIS);
 
 void setup()
 {
-
+ // rotary_encoder_begin();
   pinMode(GPIO_NUM_13, OUTPUT);   // turn on converter so it can be scanned
   digitalWrite(GPIO_NUM_13, HIGH);
   delay(10);
@@ -43,15 +46,15 @@ void setup()
   Wire.begin(GPIO_NUM_34, GPIO_NUM_33, 100000);
 
   Serial.begin(115200);
-  while (!Serial)
-    ; // Wait for serial port to connect (optional)
-  Serial.println(F("\nSystem Booting Up..."));
+ //while (!Serial)
+ //  ; // Wait for serial port to connect (optional)
+ //Serial.println(F("\nSystem Booting Up..."));
 
-  delay(200);
+ //delay(200);
 
-  //  Serial.println(F("Scanning I2C bus..."));
-  //  scan(); // scan the I2C bus
-  delay(100);
+ //  Serial.println(F("Scanning I2C bus..."));
+ //  scan(); // scan the I2C bus
+ //delay(100);
   digitalWrite(GPIO_NUM_13, LOW);   // turn off converter
 
   
@@ -70,9 +73,8 @@ void setup()
 
  timer_print.start();
  timer_LED.start();
- //timer_display.start();
+ timer_display_update.start();
 
- delay(100);
  ui_init();
 }
 
@@ -87,9 +89,11 @@ void loop()
   handle_cli();
   timer_print.update();
   timer_LED.update();
- //timer_display.start();
-  //update_display();
+  timer_display_update.update();
+  handleUserInput();
+
   lv_timer_handler(); /* let the GUI do its work */
   ui_tick();
+
 
 }

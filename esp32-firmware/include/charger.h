@@ -68,4 +68,7 @@ void handle_charger();
 
 void print_charger();
 
+//reads the charger values and returns via pointers
+void read_charger(uint16_t* vbus_mv, uint16_t* vbat_mv, uint16_t* vsys_mv, uint16_t* ichg_ma);
+
 #endif // CHARGER_H

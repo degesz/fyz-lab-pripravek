@@ -110,6 +110,10 @@ bool TPS55288::setCurrentLimit(float current)
  */
 bool TPS55288::enable()
 {
+
+ lv_obj_set_state(objects.output_enable, LV_STATE_CHECKED, true);
+ lv_label_set_text(objects.output_enable, "ON ");
+
   enabled = true;
   digitalWrite(GPIO_NUM_13, HIGH);
   delay(10);
@@ -119,6 +123,7 @@ bool TPS55288::enable()
   {
     return false; // I2C read failed
   }
+  
 
   mode_value |= (1 << 7); // Set bit 7 (OE - Output Enable) to 0
   mode_value |= (0 << 6); // Set bit 6 (frequency doubling) to 0
@@ -140,6 +145,9 @@ bool TPS55288::enable()
 bool TPS55288::disable()
 {
   enabled = false;
+
+  lv_obj_set_state(objects.output_enable, LV_STATE_CHECKED, false);
+  lv_label_set_text(objects.output_enable, "OFF");
 
   uint8_t mode_value;
   // Read the current value of the MODE register (0x06)

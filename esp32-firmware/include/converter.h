@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <math.h>
+#include <ui.h>
 
 // The default 7-bit I2C address for the TPS55288
 #define TPS55288_I2C_ADDRESS 0x75

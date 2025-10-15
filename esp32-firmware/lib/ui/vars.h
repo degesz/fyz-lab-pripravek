@@ -20,6 +20,8 @@ enum FlowGlobalVariables {
 
 // Native global variables
 
+extern bool get_var_output_enabled();
+extern void set_var_output_enabled(bool value);
 
 
 #ifdef __cplusplus

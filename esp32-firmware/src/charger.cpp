@@ -89,10 +89,22 @@ void handle_charger() {
   // This function can be used for periodic charger tasks
 }
 
+void read_charger(uint16_t* vbus_mv, uint16_t* vbat_mv, uint16_t* vsys_mv, uint16_t* ichg_ma) {
+    uint16_t vbus_psys = read_register(ADC_VBUS_PSYS_REG);
+    uint16_t vsys_vbat = read_register(ADC_VSYS_VBAT_REG);
+    uint16_t ibat      = read_register(ADC_IBAT_REG);
+
+    *vbus_mv = ((vbus_psys >> 8) * 64) + 3200;
+    *vbat_mv = ((vsys_vbat & 0xFF) * 64) + 2880;
+    *vsys_mv = ((vsys_vbat >> 8) * 64) + 2880;
+    *ichg_ma = (ibat >> 8) * 64;
+}
+
+
 void print_charger() {
   uint16_t vbus_psys = read_register(ADC_VBUS_PSYS_REG);
   uint16_t vsys_vbat = read_register(ADC_VSYS_VBAT_REG);
-  uint16_t ibat = read_register(ADC_IBAT_REG);
+  uint16_t ibat =      read_register(ADC_IBAT_REG);
 
   uint16_t vbus_mv = ((vbus_psys >> 8) * 64) + 3200;
   uint16_t vbat_mv = ((vsys_vbat & 0xFF) * 64) + 2880;
