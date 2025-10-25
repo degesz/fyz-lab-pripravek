@@ -23,8 +23,14 @@
 #define VREF_MIN_MV 45.0f
 #define VREF_STEP_MV 1.129f
 
+
+
 class TPS55288 {
 public:
+
+  //Default values
+float voltage = 5;
+float current = 500;
 
   void print_converter();
 
@@ -54,6 +60,11 @@ public:
    * @param current value in mA
    */
   bool setCurrentLimit(float current);
+
+  void update(){
+    setVoltage(voltage);
+    setCurrentLimit(current);
+  }
 
   /**
    * @brief Enables the converter's output.

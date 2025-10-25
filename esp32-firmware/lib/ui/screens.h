@@ -18,21 +18,23 @@ typedef struct _objects_t {
     lv_obj_t *obj1;
     lv_obj_t *v_readout_source;
     lv_obj_t *v_set;
-    lv_obj_t *zdroj_header;
+    lv_obj_t *overpower_alert;
     lv_obj_t *obj2;
+    lv_obj_t *zdroj_header;
     lv_obj_t *obj3;
-    lv_obj_t *output_enable;
     lv_obj_t *obj4;
+    lv_obj_t *output_enable;
     lv_obj_t *obj5;
+    lv_obj_t *obj6;
     lv_obj_t *charge_indicator;
     lv_obj_t *input_v_readout;
     lv_obj_t *kanal2;
-    lv_obj_t *obj6;
+    lv_obj_t *obj7;
     lv_obj_t *v_readout_2;
     lv_obj_t *i_readout_2;
     lv_obj_t *kanal1;
     lv_obj_t *v_readout_1;
-    lv_obj_t *obj7;
+    lv_obj_t *obj8;
     lv_obj_t *i_readout_1;
 } objects_t;
 

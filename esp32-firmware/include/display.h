@@ -8,6 +8,7 @@
 #include "charger.h"
 #include "converter.h"
 #include "measurement.h"
+#include "power_management.h"
 
 extern TPS55288 converter;
 
@@ -48,7 +49,7 @@ void IRAM_ATTR ISR_encoderBtn();
 #define TFT_VER_RES   480
 #define TFT_ROTATION  LV_DISPLAY_ROTATION_90
 
-#define RECALIBRATE 1
+#define RECALIBRATE 0
 
 /*LVGL draw into this buffer, 1/10 screen size usually works well. The size is in bytes*/
 #define DRAW_BUF_SIZE (TFT_HOR_RES * TFT_VER_RES / 10 * (LV_COLOR_DEPTH / 8))
@@ -81,11 +82,15 @@ enum SettingMode {
 };
 
 
+extern int power_limit;
+
+
 // Function prototypes
 void drawCalibrationPoint(int16_t x, int16_t y);
 void cal_display();
 
 void setup_display();
+void setup_ui();
 
 void show_splashscreen();
 

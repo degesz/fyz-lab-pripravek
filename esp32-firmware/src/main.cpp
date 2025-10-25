@@ -11,7 +11,7 @@
 #include "converter.h"
 #include "measurement.h"
 #include "display.h"
-
+#include "power_management.h"
 #include <ui.h>
 
 TPS55288 converter;
@@ -35,6 +35,7 @@ void print_info()
 Ticker timer_print(print_info, 700, 0, MILLIS);
 Ticker timer_LED(update_neopixel, 30, 0, MILLIS);
 Ticker timer_display_update(update_display, 200, 0, MILLIS);
+Ticker power_management(power_management_update, 1000, 0, MILLIS);
 
 void setup()
 {
@@ -46,19 +47,21 @@ void setup()
   Wire.begin(GPIO_NUM_34, GPIO_NUM_33, 100000);
 
   Serial.begin(115200);
- //while (!Serial)
- //  ; // Wait for serial port to connect (optional)
- //Serial.println(F("\nSystem Booting Up..."));
-
- //delay(200);
-
- //  Serial.println(F("Scanning I2C bus..."));
- //  scan(); // scan the I2C bus
- //delay(100);
-  digitalWrite(GPIO_NUM_13, LOW);   // turn off converter
-
+  //while (!Serial)
+  //  ; // Wait for serial port to connect (optional)
+  //Serial.println(F("\nSystem Booting Up..."));
   
+  //delay(200);
   
+  //  Serial.println(F("Scanning I2C bus..."));
+  //  scan(); // scan the I2C bus
+  //delay(100);
+
+
+
+
+
+
   setup_display();
   //show_splashscreen();
   setup_neopixel();
@@ -66,17 +69,21 @@ void setup()
   setup_cli();
   setup_charger();
   measurement_setup();
-  
+  setup_ui();
   //converter.begin();
-  
+
+   converter.disable();  // turn off converter 
    
 
  timer_print.start();
  timer_LED.start();
  timer_display_update.start();
+ power_management.start();
 
- ui_init();
+
 }
+
+
 
 void loop()
 {
@@ -89,7 +96,9 @@ void loop()
   handle_cli();
   timer_print.update();
   timer_LED.update();
+  power_management.update();
   timer_display_update.update();
+
   handleUserInput();
 
   lv_timer_handler(); /* let the GUI do its work */

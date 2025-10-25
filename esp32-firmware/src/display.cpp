@@ -6,7 +6,7 @@ XPT2046_Touchscreen ts(2);
 
 ESP32Encoder encoder;
 int lastCount = 0;
-
+uint32_t last_alert_show_time = 0;
 // === INTERNAL STATE ===
 struct ButtonState
 {
@@ -125,7 +125,7 @@ void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
     data->point.y = x;
     data->point.x = y;
     data->state = LV_INDEV_STATE_PR;
-    Serial.printf("touching X:%d   Y:%d   rawX:%d    rawY:%d   minX:%d maxX:%d minY:%d  maxY:%d   width:%d, height:%d\n" , x, y, p.x, p.y, calData.minX, calData.maxX,calData.minY,calData.maxY,tft.width(),tft.height() );
+    Serial.printf("touching X:%d   Y:%d   rawX:%d    rawY:%d   minX:%d maxX:%d minY:%d  maxY:%d   width:%d, height:%d\n", x, y, p.x, p.y, calData.minX, calData.maxX, calData.minY, calData.maxY, tft.width(), tft.height());
   }
   else
   {
@@ -239,11 +239,37 @@ void setup_display()
   lv_indev_t *indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
   lv_indev_set_read_cb(indev, my_touchpad_read);
+
+  
+}
+
+float VoltageSet = 0;
+float CurrentSet = 0;
+
+void setup_ui()
+{
+  ui_init();
+  char str_v_set[10];
+  sprintf(str_v_set, "%.1f V", converter.voltage);
+  lv_label_set_text(objects.v_set, str_v_set);
+
+  char str_i_set[16];
+  if (converter.current < 1000)
+  {
+    sprintf(str_i_set, "%.0f mA", converter.current);
+  }
+  else
+  {
+    sprintf(str_i_set, "%.2f mA", converter.current / 1000.0);
+  }
+  lv_label_set_text(objects.i_set, str_i_set);
+  VoltageSet = converter.voltage;
+  CurrentSet = converter.current;
+  Serial.printf(" DEFAULT CURREND: %f\n", converter.current);
+  lv_obj_set_pos(objects.overpower_alert, 500, 66);
 }
 
 SettingMode currentMode = MODE_IDLE;
-float VoltageSet = 0;
-float CurrentSet = 0;
 
 void handleUserInput()
 {
@@ -251,14 +277,41 @@ void handleUserInput()
   switch (currentMode)
   {
   case MODE_IDLE:
+  {
     if (btn3ShortPressed)
     {
       btn3ShortPressed = false;
       currentMode = MODE_VOLTAGE_SETTING;
     }
+    if (btn3LongPressed)
+    {
+      btn3LongPressed = false;
+      currentMode = MODE_CURRENT_SETTING;
+    }
+
+    if (encoderLongPressed)
+    {
+      encoderLongPressed = false;
+      if (converter.enabled)
+      {
+        converter.disable();
+      }
+      else
+      {
+        converter.enable();
+        converter.update();
+      }
+    }
+    if (encoderShortPressed)
+    {
+      encoderShortPressed = false;
+    }
+    encoder.setCount(0);
 
     break;
+  }
   case MODE_VOLTAGE_SETTING:
+  {
     if (encoder.getCount() != 0)
     {
       VoltageSet += encoder.getCount() * 0.1;
@@ -283,7 +336,8 @@ void handleUserInput()
       char str_v_set[10];
       sprintf(str_v_set, "%.1f V", VoltageSet);
       lv_label_set_text(objects.v_set, str_v_set);
-      converter.setVoltage(VoltageSet);
+      converter.voltage = VoltageSet;
+      converter.update();
 
       currentMode = MODE_IDLE;
     }
@@ -293,6 +347,65 @@ void handleUserInput()
     }
 
     break;
+  }
+
+  case MODE_CURRENT_SETTING:{
+
+    int current_ceiling = (power_limit / converter.voltage) * 1000;
+
+    if (encoder.getCount() != 0)
+    {
+      CurrentSet += encoder.getCount() * 50;
+      if (CurrentSet <= 0)
+      {
+        CurrentSet = 0;
+      }
+      if (CurrentSet > current_ceiling)
+      {
+        CurrentSet = current_ceiling;
+        lv_obj_set_pos(objects.overpower_alert, 140, 66);
+        last_alert_show_time = millis();
+      }
+      encoder.clearCount();
+    }
+
+    char str_i_set[16];
+    if (CurrentSet < 1000)
+    {
+      sprintf(str_i_set, ">%.0f mA<", CurrentSet);
+    }
+    else
+    {
+      sprintf(str_i_set, ">%.2f mA<", CurrentSet / 1000);
+    }
+    lv_label_set_text(objects.i_set, str_i_set);
+
+    if (encoderShortPressed)
+    {
+      char str_i_set[16];
+      if (CurrentSet < 1000)
+      {
+        sprintf(str_i_set, "%.0f mA", CurrentSet);
+      }
+      else
+      {
+        sprintf(str_i_set, "%.2f mA", CurrentSet / 1000);
+      }
+      lv_label_set_text(objects.i_set, str_i_set);
+      converter.current = CurrentSet;
+      converter.update();
+
+      currentMode = MODE_IDLE;
+    }
+    if (btn3ShortPressed)
+    {
+      btn3ShortPressed = false;
+    }
+    if (btn3LongPressed)
+    {
+      btn3LongPressed = false;
+    }
+    break;}
 
   default:
     break;
@@ -301,6 +414,30 @@ void handleUserInput()
 
 void update_display()
 {
+
+  if (converter.voltage * (converter.current/1000) >= power_limit)
+  {
+    CurrentSet = power_limit / converter.voltage;
+    char str_i_set[16];
+    if (CurrentSet < 1000)
+    {
+      sprintf(str_i_set, "%.0f mA", CurrentSet);
+    }
+    else
+    {
+      sprintf(str_i_set, "%.2f mA", CurrentSet / 1000);
+    }
+    lv_label_set_text(objects.i_set, str_i_set);
+    converter.current = CurrentSet;
+    lv_obj_set_pos(objects.overpower_alert, 140, 66);
+    last_alert_show_time = millis();
+    converter.update();
+  }
+
+  if (millis() > last_alert_show_time + 500) // hide the overpower alert back
+  {
+    lv_obj_set_pos(objects.overpower_alert, 500, 66);
+  }
 
   uint16_t vbus, vbat, vsys, ichg;
   read_charger(&vbus, &vbat, &vsys, &ichg);

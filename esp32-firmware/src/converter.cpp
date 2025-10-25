@@ -137,6 +137,7 @@ bool TPS55288::enable()
 
   // Write the modified value back to the MODE register
   return writeRegister(TPS55288_MODE, mode_value);
+  
 }
 
 /**
