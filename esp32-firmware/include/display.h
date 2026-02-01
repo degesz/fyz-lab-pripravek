@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <cstddef>
 #include <ui.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 #include <lvgl.h>
@@ -7,6 +8,7 @@
 #include <ESP32Encoder.h>
 #include "charger.h"
 #include "converter.h"
+#include "device_state.h"
 #include "measurement.h"
 #include "power_management.h"
 
@@ -20,6 +22,18 @@ extern TPS55288 converter;
 
 #define DEBOUNCE_MS 80
 #define LONG_PRESS_MS   400
+
+/* Set to 1 to enable touch/encoder Serial debug; 0 to reduce spam */
+#define DEBUG_VERBOSE_LOGS 1
+
+/* Overpower alert position and timing */
+#define OVERPOWER_ALERT_DURATION_MS  500
+#define OVERPOWER_ALERT_VISIBLE_X    140
+#define OVERPOWER_ALERT_VISIBLE_Y    66
+#define OVERPOWER_ALERT_HIDDEN_X    500
+#define OVERPOWER_ALERT_HIDDEN_Y    66
+
+#define FORMAT_BUF_SIZE 16
 
 // =========================
 // === STATE VARIABLES ====
@@ -50,6 +64,7 @@ void IRAM_ATTR ISR_btn4();
 void IRAM_ATTR ISR_encoderBtn();
 
 
+/* Native panel size (portrait); after ROTATION_90 LVGL logical size is 480×320: X horizontal, Y vertical */
 #define TFT_HOR_RES   320
 #define TFT_VER_RES   480
 #define TFT_ROTATION  LV_DISPLAY_ROTATION_90
@@ -87,9 +102,6 @@ enum SettingMode {
 };
 
 
-extern int power_limit;
-
-
 // Function prototypes
 void drawCalibrationPoint(int16_t x, int16_t y);
 void cal_display();
@@ -103,4 +115,12 @@ void update_display();
 void handleUserInput();
 
 int voltageToPercentage(int millivolts);
+
+/* Formatting helpers for labels (buffer size >= 16 recommended) */
+void formatVoltageLabel(char *buf, size_t size, float v);
+void formatVoltageLabelEditing(char *buf, size_t size, float v);
+void formatCurrentLabel(char *buf, size_t size, float mA);
+void formatCurrentLabelEditing(char *buf, size_t size, float mA);
+void formatVoltageReadout(char *buf, size_t size, float v);
+void formatCurrentReadout(char *buf, size_t size, float mA);
 

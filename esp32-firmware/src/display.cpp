@@ -1,4 +1,5 @@
 #include "display.h"
+#include "actions.h"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 
@@ -115,26 +116,37 @@ void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
   {
     TS_Point p = ts.getPoint();
 
-    // Map raw touch to screen pixels
-    int16_t x = map(p.x, calData.minX, calData.maxX, 0, tft.width());
-    int16_t y = map(p.y, calData.minY, calData.maxY, 0, tft.height());
+    // Map raw touch to logical pixels (480×320, X horizontal Y vertical)
+    int16_t logical_x = map(p.x, calData.minX, calData.maxX, 28, TFT_VER_RES - 30);
+    int16_t logical_y = map(p.y, calData.minY, calData.maxY, 28, TFT_HOR_RES - 30);
+    logical_x = constrain(logical_x, 0, TFT_VER_RES - 1);
+    logical_y = constrain(logical_y, 0, TFT_HOR_RES - 1);
 
-    // Clamp to display boundaries
-    x = constrain(x, 0, tft.width() - 1);
-    y = constrain(y, 0, tft.height() - 1);
+    last_x = logical_x;
+    last_y = logical_y;
 
-    last_x = x;
-    last_y = y;
-
-    data->point.y = x;
-    data->point.x = y;
+    /* LVGL expects NATIVE (unrotated) coords and applies display rotation for hit-test.
+     * Native is 320×480; for ROTATION_90 the inverse is: native_x = logical_y, native_y = 479 - logical_x */
+    data->point.x = (int16_t)logical_y;
+    data->point.y = (int16_t)(TFT_VER_RES - 1 - logical_x);
     data->state = LV_INDEV_STATE_PR;
-    Serial.printf("touching X:%d   Y:%d   rawX:%d    rawY:%d   minX:%d maxX:%d minY:%d  maxY:%d   width:%d, height:%d\n", x, y, p.x, p.y, calData.minX, calData.maxX, calData.minY, calData.maxY, tft.width(), tft.height());
+
+    /* Move cal_marker in logical coords so it follows the finger */
+    if (objects.cal_marker != nullptr) {
+      lv_coord_t w = lv_obj_get_width(objects.cal_marker);
+      lv_coord_t h = lv_obj_get_height(objects.cal_marker);
+      lv_obj_set_pos(objects.cal_marker, logical_x - w / 2, logical_y - h / 2);
+    }
+
+#if DEBUG_VERBOSE_LOGS
+    Serial.printf("touching logical X:%d Y:%d  native x:%d y:%d  raw:%d,%d\n", logical_x, logical_y, (int)data->point.x, (int)data->point.y, p.x, p.y);
+#endif
   }
   else
   {
-    data->point.y = last_x;
-    data->point.x = last_y;
+    /* Same native transform as pressed: native_x = logical_y, native_y = 479 - logical_x */
+    data->point.x = (int16_t)last_y;
+    data->point.y = (int16_t)(TFT_VER_RES - 1 - last_x);
     data->state = LV_INDEV_STATE_REL;
   }
 }
@@ -145,7 +157,9 @@ static uint32_t my_tick(void)
   if (encoder.getCount() != lastCount)
   {
     lastCount = encoder.getCount();
+#if DEBUG_VERBOSE_LOGS
     Serial.println(lastCount);
+#endif
   }
 // if (btn1ShortPressed) {
 // btn1ShortPressed = false;
@@ -254,9 +268,9 @@ void setup_display()
   lv_indev_t *indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touchpad should have POINTER type*/
   lv_indev_set_read_cb(indev, my_touchpad_read);
-
-  
+  lv_indev_set_display(indev, disp); /* required: bind touch to this display so clicks reach widgets */
 }
+
 
 float VoltageSet = 0;
 float CurrentSet = 0;
@@ -264,24 +278,14 @@ float CurrentSet = 0;
 void setup_ui()
 {
   ui_init();
-  char str_v_set[10];
-  sprintf(str_v_set, "%.1f V", converter.voltage);
-  lv_label_set_text(objects.v_set, str_v_set);
-
-  char str_i_set[16];
-  if (converter.current < 1000)
-  {
-    sprintf(str_i_set, "%.0f mA", converter.current);
-  }
-  else
-  {
-    sprintf(str_i_set, "%.2f mA", converter.current / 1000.0);
-  }
-  lv_label_set_text(objects.i_set, str_i_set);
+  char buf[FORMAT_BUF_SIZE];
+  formatVoltageLabel(buf, sizeof(buf), converter.voltage);
+  lv_label_set_text(objects.v_set, buf);
+  formatCurrentLabel(buf, sizeof(buf), converter.current);
+  lv_label_set_text(objects.i_set, buf);
   VoltageSet = converter.voltage;
   CurrentSet = converter.current;
-  Serial.printf(" DEFAULT CURREND: %f\n", converter.current);
-  lv_obj_set_pos(objects.overpower_alert, 500, 66);
+  lv_obj_set_pos(objects.overpower_alert, OVERPOWER_ALERT_HIDDEN_X, OVERPOWER_ALERT_HIDDEN_Y);
 }
 
 SettingMode currentMode = MODE_IDLE;
@@ -341,16 +345,15 @@ void handleUserInput()
       encoder.clearCount();
     }
 
-    char str_v_set[10];
-    sprintf(str_v_set, ">%.1f V<", VoltageSet);
-    lv_label_set_text(objects.v_set, str_v_set);
+    char buf[FORMAT_BUF_SIZE];
+    formatVoltageLabelEditing(buf, sizeof(buf), VoltageSet);
+    lv_label_set_text(objects.v_set, buf);
 
     if (encoderShortPressed)
     {
       encoderShortPressed = false;
-      char str_v_set[10];
-      sprintf(str_v_set, "%.1f V", VoltageSet);
-      lv_label_set_text(objects.v_set, str_v_set);
+      formatVoltageLabel(buf, sizeof(buf), VoltageSet);
+      lv_label_set_text(objects.v_set, buf);
       converter.voltage = VoltageSet;
       converter.update();
 
@@ -366,7 +369,8 @@ void handleUserInput()
 
   case MODE_CURRENT_SETTING:{
 
-    int current_ceiling = (power_limit / converter.voltage) * 1000;
+    const DeviceState* dev = get_device_state();
+    int current_ceiling = (dev->power_limit_w / converter.voltage) * 1000;
 
     if (encoder.getCount() != 0)
     {
@@ -378,35 +382,20 @@ void handleUserInput()
       if (CurrentSet > current_ceiling)
       {
         CurrentSet = current_ceiling;
-        lv_obj_set_pos(objects.overpower_alert, 140, 66);
+        lv_obj_set_pos(objects.overpower_alert, OVERPOWER_ALERT_VISIBLE_X, OVERPOWER_ALERT_VISIBLE_Y);
         last_alert_show_time = millis();
       }
       encoder.clearCount();
     }
 
-    char str_i_set[16];
-    if (CurrentSet < 1000)
-    {
-      sprintf(str_i_set, ">%.0f mA<", CurrentSet);
-    }
-    else
-    {
-      sprintf(str_i_set, ">%.2f mA<", CurrentSet / 1000);
-    }
-    lv_label_set_text(objects.i_set, str_i_set);
+    char buf[FORMAT_BUF_SIZE];
+    formatCurrentLabelEditing(buf, sizeof(buf), CurrentSet);
+    lv_label_set_text(objects.i_set, buf);
 
     if (encoderShortPressed)
     {
-      char str_i_set[16];
-      if (CurrentSet < 1000)
-      {
-        sprintf(str_i_set, "%.0f mA", CurrentSet);
-      }
-      else
-      {
-        sprintf(str_i_set, "%.2f mA", CurrentSet / 1000);
-      }
-      lv_label_set_text(objects.i_set, str_i_set);
+      formatCurrentLabel(buf, sizeof(buf), CurrentSet);
+      lv_label_set_text(objects.i_set, buf);
       converter.current = CurrentSet;
       converter.update();
 
@@ -429,112 +418,44 @@ void handleUserInput()
 
 void update_display()
 {
+  char buf[FORMAT_BUF_SIZE];
 
-  if (converter.voltage * (converter.current/1000) >= power_limit)
+  const DeviceState* dev = get_device_state();
+  if (converter.voltage * (converter.current / 1000) >= dev->power_limit_w)
   {
-    CurrentSet = power_limit / converter.voltage;
-    char str_i_set[16];
-    if (CurrentSet < 1000)
-    {
-      sprintf(str_i_set, "%.0f mA", CurrentSet);
-    }
-    else
-    {
-      sprintf(str_i_set, "%.2f mA", CurrentSet / 1000);
-    }
-    lv_label_set_text(objects.i_set, str_i_set);
+    CurrentSet = dev->power_limit_w / converter.voltage;
+    formatCurrentLabel(buf, sizeof(buf), CurrentSet);
+    lv_label_set_text(objects.i_set, buf);
     converter.current = CurrentSet;
-    lv_obj_set_pos(objects.overpower_alert, 140, 66);
+    lv_obj_set_pos(objects.overpower_alert, OVERPOWER_ALERT_VISIBLE_X, OVERPOWER_ALERT_VISIBLE_Y);
     last_alert_show_time = millis();
     converter.update();
   }
 
-  if (millis() > last_alert_show_time + 500) // hide the overpower alert back
+  if (millis() > last_alert_show_time + OVERPOWER_ALERT_DURATION_MS)
   {
-    lv_obj_set_pos(objects.overpower_alert, 500, 66);
+    lv_obj_set_pos(objects.overpower_alert, OVERPOWER_ALERT_HIDDEN_X, OVERPOWER_ALERT_HIDDEN_Y);
   }
 
-  uint16_t vbus, vbat, vsys, ichg;
-  read_charger(&vbus, &vbat, &vsys, &ichg);
+  formatVoltageReadout(buf, sizeof(buf), dev->vbus_mv / 1000.0f);
+  lv_label_set_text(objects.input_v_readout, buf);
 
-  char str_input_v_readout[8];
-  sprintf(str_input_v_readout, "%.1f V", vbus / 1000.0);
-  lv_label_set_text(objects.input_v_readout, str_input_v_readout);
-
-  // int percent_charged = ;
-  char str_percent_charged[8];
-  sprintf(str_percent_charged, "%d \%", voltageToPercentage(vbat / 2));
-  lv_label_set_text(objects.charge_indicator, str_percent_charged);
+  snprintf(buf, sizeof(buf), "%d %%", voltageToPercentage(dev->vbat_mv / 2));
+  lv_label_set_text(objects.charge_indicator, buf);
 
   float voltages[3];
   float currents[3];
   getMeasurements(voltages, currents);
 
-  char str_v_readout_source[8];
-  if (voltages[0] < 10)
+  lv_obj_t *v_labels[3] = { objects.v_readout_source, objects.v_readout_1, objects.v_readout_2 };
+  lv_obj_t *i_labels[3] = { objects.i_readout_source, objects.i_readout_1, objects.i_readout_2 };
+  for (int ch = 0; ch < 3; ch++)
   {
-    sprintf(str_v_readout_source, "%.2f V", voltages[0]);
+    formatVoltageReadout(buf, sizeof(buf), voltages[ch]);
+    lv_label_set_text(v_labels[ch], buf);
+    formatCurrentReadout(buf, sizeof(buf), currents[ch]);
+    lv_label_set_text(i_labels[ch], buf);
   }
-  else
-  {
-    sprintf(str_v_readout_source, "%.1f V", voltages[0]);
-  }
-  lv_label_set_text(objects.v_readout_source, str_v_readout_source);
-
-  char str_i_readout_source[8];
-  if (currents[0] < 1000)
-  {
-    sprintf(str_i_readout_source, "%.0f mA", currents[0]);
-  }
-  else
-  {
-    sprintf(str_i_readout_source, "%.3f A", currents[0] / 1000.0);
-  }
-  lv_label_set_text(objects.i_readout_source, str_i_readout_source);
-
-  char str_v_readout_1[8];
-  if (voltages[0] < 10)
-  {
-    sprintf(str_v_readout_1, "%.2f V", voltages[1]);
-  }
-  else
-  {
-    sprintf(str_v_readout_1, "%.1f V", voltages[1]);
-  }
-  lv_label_set_text(objects.v_readout_1, str_v_readout_1);
-
-  char str_i_readout_1[8];
-  if (currents[0] < 1000)
-  {
-    sprintf(str_i_readout_1, "%.0f mA", currents[1]);
-  }
-  else
-  {
-    sprintf(str_i_readout_1, "%.3f A", currents[1] / 1000.0);
-  }
-  lv_label_set_text(objects.i_readout_1, str_i_readout_1);
-
-  char str_v_readout_2[8];
-  if (voltages[0] < 10)
-  {
-    sprintf(str_v_readout_2, "%.2f V", voltages[2]);
-  }
-  else
-  {
-    sprintf(str_v_readout_2, "%.1f V", voltages[2]);
-  }
-  lv_label_set_text(objects.v_readout_2, str_v_readout_2);
-
-  char str_i_readout_2[8];
-  if (currents[0] < 1000)
-  {
-    sprintf(str_i_readout_2, "%.0f mA", currents[2]);
-  }
-  else
-  {
-    sprintf(str_i_readout_2, "%.3f A", currents[2] / 1000.0);
-  }
-  lv_label_set_text(objects.i_readout_2, str_i_readout_2);
 }
 
 Preferences prefs;                       // NVS storage
@@ -560,6 +481,8 @@ void cal_display()
     prefs.end();
     return;
   }
+
+  
 
   // Not calibrated — perform calibration
   tft.fillScreen(TFT_BLACK);
@@ -621,16 +544,17 @@ void drawCalibrationPoint(int16_t x, int16_t y)
   tft.fillCircle(x, y, 4, TFT_RED);
 }
 
-// Example of how to use calibration data later:
-int16_t touchToPixelX(uint16_t rawX)
-{
-  return map(rawX, calData.minX - 20, calData.maxX + 5, 0, tft.width());
-}
+//  // Example of how to use calibration data later:
+//  int16_t touchToPixelX(uint16_t rawX)
+//  {
+//    return map(rawX, calData.minX - 20, calData.maxX + 5, 0, TFT_VER_RES);
+//  }
+//  
+//  int16_t touchToPixelY(uint16_t rawY)
+//  {
+//    return map(rawY, calData.minY - 20, calData.maxY + 20, 0, TFT_HOR_RES);
+//  }
 
-int16_t touchToPixelY(uint16_t rawY)
-{
-  return map(rawY, calData.minY - 20, calData.maxY + 20, 0, tft.height());
-}
 
 int voltageToPercentage(int millivolts)
 {
@@ -654,6 +578,48 @@ int voltageToPercentage(int millivolts)
     return map(millivolts, 3500, 3700, 0, 40);
 
   return 0; // fallback
+}
+
+void formatVoltageLabel(char *buf, size_t size, float v)
+{
+  snprintf(buf, size, "%.1f V", (double)v);
+}
+
+void formatVoltageLabelEditing(char *buf, size_t size, float v)
+{
+  snprintf(buf, size, ">%.1f V<", (double)v);
+}
+
+void formatCurrentLabel(char *buf, size_t size, float mA)
+{
+  if (mA < 1000)
+    snprintf(buf, size, "%.0f mA", (double)mA);
+  else
+    snprintf(buf, size, "%.2f mA", (double)(mA / 1000.0));
+}
+
+void formatCurrentLabelEditing(char *buf, size_t size, float mA)
+{
+  if (mA < 1000)
+    snprintf(buf, size, ">%.0f mA<", (double)mA);
+  else
+    snprintf(buf, size, ">%.2f mA<", (double)(mA / 1000.0));
+}
+
+void formatVoltageReadout(char *buf, size_t size, float v)
+{
+  if (v < 10)
+    snprintf(buf, size, "%.2f V", (double)v);
+  else
+    snprintf(buf, size, "%.1f V", (double)v);
+}
+
+void formatCurrentReadout(char *buf, size_t size, float mA)
+{
+  if (mA < 1000)
+    snprintf(buf, size, "%.0f mA", (double)mA);
+  else
+    snprintf(buf, size, "%.3f A", (double)(mA / 1000.0));
 }
 
 /*

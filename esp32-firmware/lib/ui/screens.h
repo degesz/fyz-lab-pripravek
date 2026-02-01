@@ -36,6 +36,8 @@ typedef struct _objects_t {
     lv_obj_t *v_readout_1;
     lv_obj_t *obj8;
     lv_obj_t *i_readout_1;
+    lv_obj_t *cal_marker;
+    lv_obj_t *obj9;
 } objects_t;
 
 extern objects_t objects;

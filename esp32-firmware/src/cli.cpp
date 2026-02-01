@@ -1,28 +1,28 @@
 #include "cli.h"
 
-// Create CLI Object
-SimpleCLI cli;
+// Serial CLI instance (named to avoid shadowing the "cli" module)
+SimpleCLI serialCli;
 
-// Commands
-Command ping;
-Command source;
-Command out;
-Command halt;
-Command reset;
-Command pd;
+// Command handles
+Command cmdPing;
+Command cmdSource;
+Command cmdOut;
+Command cmdHalt;
+Command cmdReset;
+Command cmdPd;
 
 void setup_cli()
 {
-  ping = cli.addCmd("ping");
-  out = cli.addCmd("out");
-  source = cli.addCmd("source");
-  halt = cli.addCmd("halt");
-  reset = cli.addCmd("reset");
-  pd = cli.addCmd("pd");
+  cmdPing = serialCli.addCmd("ping");
+  cmdOut = serialCli.addCmd("out");
+  cmdSource = serialCli.addCmd("source");
+  cmdHalt = serialCli.addCmd("halt");
+  cmdReset = serialCli.addCmd("reset");
+  cmdPd = serialCli.addCmd("pd");
 
-  source.addArg("v", "NAN");
-  source.addArg("i", "NAN");
-  pd.addArg("v", "NAN");
+  cmdSource.addArg("v", "NAN");
+  cmdSource.addArg("i", "NAN");
+  cmdPd.addArg("v", "NAN");
 }
 
 void handle_cli()
@@ -38,21 +38,20 @@ void handle_cli()
     Serial.println(input);
 
     // Parse the user input into the CLI
-    cli.parse(input);
+    serialCli.parse(input);
   }
 
   // Check for newly parsed commands
-  if (cli.available())
+  if (serialCli.available())
   {
     // Get command out of queue
-    Command cmd = cli.getCmd();
+    Command cmd = serialCli.getCmd();
 
-    // React on our ping command
-    if (cmd == ping)
+    if (cmd == cmdPing)
     {
       Serial.println("Pong!");
     }
-    else if (cmd == source)
+    else if (cmd == cmdSource)
     {
       Argument voltage = cmd.getArg("v");
       Argument current = cmd.getArg("i");
@@ -65,7 +64,7 @@ void handle_cli()
         converter.setCurrentLimit(current.getValue().toFloat());
       }
     }
-    else if (cmd == halt)
+    else if (cmd == cmdHalt)
     {
       if (stopLoop == 0)
       {
@@ -78,7 +77,7 @@ void handle_cli()
         stopLoop = 0;
       }
     }
-    else if (cmd == out)
+    else if (cmd == cmdOut)
     {
       if (converter.enabled)
       {
@@ -91,11 +90,11 @@ void handle_cli()
         converter.enable();
       }
     }
-    else if (cmd == reset)
+    else if (cmd == cmdReset)
     {
       ESP.restart();
     }
-    else if (cmd == pd)
+    else if (cmd == cmdPd)
     {
       Argument voltage = cmd.getArg("v");
       if (!voltage.equals("NAN"))
@@ -112,10 +111,10 @@ void handle_cli()
   }
 
   // Check for parsing errors
-  if (cli.errored())
+  if (serialCli.errored())
   {
     // Get error out of queue
-    CommandError cmdError = cli.getError();
+    CommandError cmdError = serialCli.getError();
 
     // Print the error
     Serial.print("ERROR: ");

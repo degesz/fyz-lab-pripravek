@@ -1,48 +1,34 @@
 #include "power_management.h"
+#include "device_state.h"
+#include <Arduino.h>
 
-int power_limit = 20;
-bool charging ;
-bool low_bat;
-bool critical_bat ;
+static bool last_charging = false;
+static bool last_low_bat = false;
+static bool last_critical_bat = false;
 
 void power_management_update()
 {
-
     uint16_t vbus, vbat, vsys, ichg;
     read_charger(&vbus, &vbat, &vsys, &ichg);
+    device_state_update_from_charger(vbus, vbat, vsys, ichg);
 
-    if (ichg > 0)
+    const DeviceState* s = get_device_state();
+    // Log only on state change to reduce Serial spam
+    if (s->critical_bat != last_critical_bat)
     {
-        charging = true;
-        power_limit = 20 + ((vbat / 1000) * (ichg / 1000));
+        last_critical_bat = s->critical_bat;
+        if (s->critical_bat)
+            Serial.println(F("POWER: BATTERY CRITICAL"));
     }
-    else
+    if (s->low_bat != last_low_bat)
     {
-        charging = false;
-        power_limit = 20;
+        last_low_bat = s->low_bat;
+        if (s->low_bat)
+            Serial.println(F("POWER: Battery low"));
     }
-
-    low_bat = false;
-    critical_bat = false;
-    if (vbat <= 7000)
+    if (s->charging != last_charging)
     {
-        low_bat = true;
-        power_limit = 5;
+        last_charging = s->charging;
+        Serial.printf("POWER: %s, limit %d W\n", s->charging ? "Charging" : "On battery", s->power_limit_w);
     }
-    if (vbat <= 6800)
-    {
-        power_limit = 5;
-        low_bat = true;
-        critical_bat = true;
-    }
-    
-
-    Serial.println("//////////////////   POWER MANAGEMENT/////////////\n");
-    Serial.printf("     %s               --     Power limit: %d \n     Input voltage: %.1f     --     Charging current: %d \n", charging ? "Charging" : "Running on battery", power_limit, vbus / 1000.0, ichg);
-    Serial.print(low_bat ? "BATTERY LOW\n\n" : "");
-    Serial.print(critical_bat ? "BATTERY CRITICAL !! BATTERY CRITICAL !! BATTERY CRITICAL !! BATTERY CRITICAL !! \n\n" : "");
-    Serial.println("//////////////////////////////////////////////////");
-
-
-    setup_charger();
 }
