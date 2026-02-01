@@ -9,9 +9,11 @@ STUSB4500 usb; // STUSB4500 object
 
 void setup_usb()
 {
+
+  Wire1.begin(26, 21, 100000);
   // --- STUSB4500 Initialization ---
   Serial.println(F("\nInitializing STUSB4500..."));
-  if (!usb.begin(0x28))
+  if (!usb.begin(0x28, Wire1))
   { // Default STUSB4500 address is 0x28
     Serial.println(F("Cannot connect to STUSB4500. (USB-PD not powered)"));
   }

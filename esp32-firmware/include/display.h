@@ -15,7 +15,8 @@ extern TPS55288 converter;
 #define ENCODER_BTN 5
 #define BTN_1 1
 #define BTN_2 2
-#define BTN_3 0
+#define BTN_3 45
+#define BTN_4 18
 
 #define DEBOUNCE_MS 80
 #define LONG_PRESS_MS   400
@@ -32,6 +33,9 @@ extern volatile bool btn2LongPressed;
 extern volatile bool btn3ShortPressed;
 extern volatile bool btn3LongPressed;
 
+extern volatile bool btn4ShortPressed;
+extern volatile bool btn4LongPressed;
+
 extern volatile bool encoderShortPressed;
 extern volatile bool encoderLongPressed;
 
@@ -42,6 +46,7 @@ void initButtons();
 void IRAM_ATTR ISR_btn1();
 void IRAM_ATTR ISR_btn2();
 void IRAM_ATTR ISR_btn3();
+void IRAM_ATTR ISR_btn4();
 void IRAM_ATTR ISR_encoderBtn();
 
 

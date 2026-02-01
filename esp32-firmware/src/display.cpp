@@ -18,6 +18,7 @@ struct ButtonState
 static ButtonState btn1 = {false, 0, 0};
 static ButtonState btn2 = {false, 0, 0};
 static ButtonState btn3 = {false, 0, 0};
+static ButtonState btn4 = {false, 0, 0};
 static ButtonState enc = {false, 0, 0};
 
 // === OUTPUT FLAGS ===
@@ -27,6 +28,8 @@ volatile bool btn2ShortPressed = false;
 volatile bool btn2LongPressed = false;
 volatile bool btn3ShortPressed = false;
 volatile bool btn3LongPressed = false;
+volatile bool btn4ShortPressed = false;
+volatile bool btn4LongPressed = false;
 volatile bool encoderShortPressed = false;
 volatile bool encoderLongPressed = false;
 
@@ -70,6 +73,7 @@ static void IRAM_ATTR handleButtonEdge(ButtonState &bState, volatile bool &short
 void IRAM_ATTR ISR_btn1() { handleButtonEdge(btn1, btn1ShortPressed, btn1LongPressed, BTN_1); }
 void IRAM_ATTR ISR_btn2() { handleButtonEdge(btn2, btn2ShortPressed, btn2LongPressed, BTN_2); }
 void IRAM_ATTR ISR_btn3() { handleButtonEdge(btn3, btn3ShortPressed, btn3LongPressed, BTN_3); }
+void IRAM_ATTR ISR_btn4() { handleButtonEdge(btn4, btn4ShortPressed, btn4LongPressed, BTN_4); }
 void IRAM_ATTR ISR_encoderBtn() { handleButtonEdge(enc, encoderShortPressed, encoderLongPressed, ENCODER_BTN); }
 
 uint32_t draw_buf[DRAW_BUF_SIZE / 4];
@@ -143,44 +147,53 @@ static uint32_t my_tick(void)
     lastCount = encoder.getCount();
     Serial.println(lastCount);
   }
+// if (btn1ShortPressed) {
+// btn1ShortPressed = false;
+// Serial.println("BTN1 short press");
+// }
+// if (btn1LongPressed) {
+// btn1LongPressed = false;
+// Serial.println("BTN1 long press");
+// }
+//
+// if (btn2ShortPressed) {
+// btn2ShortPressed = false;
+// Serial.println("BTN2 short press");
+// }
+// if (btn2LongPressed) {
+// btn2LongPressed = false;
+// Serial.println("BTN2 long press");
+// }
+//
+// if (btn3ShortPressed) {
+// btn3ShortPressed = false;
+// Serial.println("BTN3 short press");
+// }
+// if (btn3LongPressed) {
+// btn3LongPressed = false;
+// Serial.println("BTN3 long press");
+// }
+//
+// if (btn4ShortPressed) {
+// btn4ShortPressed = false;
+// Serial.println("BTN4 short press");
+// }
+// if (btn4LongPressed) {
+// btn4LongPressed = false;
+// Serial.println("BTN4 long press");
+// }
+//
+// if (encoderShortPressed) {
+// encoderShortPressed = false;
+// Serial.println("ENCODER short press");
+// }
+// if (encoderLongPressed) {
+// if (encoderLongPressed) {
+//   encoderLongPressed = false;
+//   Serial.println("ENCODER long press");
+// }
 
-  //    if (btn1ShortPressed) {
-  //    btn1ShortPressed = false;
-  //    Serial.println("BTN1 short press");
-  //  }
-  //  if (btn1LongPressed) {
-  //    btn1LongPressed = false;
-  //    Serial.println("BTN1 long press");
-  //  }
-  //
-  //  if (btn2ShortPressed) {
-  //    btn2ShortPressed = false;
-  //    Serial.println("BTN2 short press");
-  //  }
-  //  if (btn2LongPressed) {
-  //    btn2LongPressed = false;
-  //    Serial.println("BTN2 long press");
-  //  }
-  //
-  //  if (btn3ShortPressed) {
-  //    btn3ShortPressed = false;
-  //    Serial.println("BTN3 short press");
-  //  }
-  //  if (btn3LongPressed) {
-  //    btn3LongPressed = false;
-  //    Serial.println("BTN3 long press");
-  //  }
-  //
-  //  if (encoderShortPressed) {
-  //    encoderShortPressed = false;
-  //    Serial.println("ENCODER short press");
-  //  }
-  //  if (encoderLongPressed) {
-  //    encoderLongPressed = false;
-  //    Serial.println("ENCODER long press");
-  //  }
-
-  return millis();
+return millis();
 }
 
 void setup_display()
@@ -193,10 +206,12 @@ void setup_display()
   pinMode(BTN_1, INPUT);
   pinMode(BTN_2, INPUT);
   pinMode(BTN_3, INPUT);
+  pinMode(BTN_4, INPUT);
 
-  // attachInterrupt(digitalPinToInterrupt(BTN_1), ISR_btn1, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(BTN_2), ISR_btn2, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(BTN_1), ISR_btn1, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(BTN_2), ISR_btn2, CHANGE);
   attachInterrupt(digitalPinToInterrupt(BTN_3), ISR_btn3, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(BTN_4), ISR_btn4, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODER_BTN), ISR_encoderBtn, CHANGE);
 
   ts.begin();
