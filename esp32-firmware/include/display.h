@@ -114,6 +114,10 @@ void show_splashscreen();
 void update_display();
 void handleUserInput();
 
+/** Set voltage/current via display state (updates labels and propagates to converter) */
+void setSourceVoltage(float v);
+void setSourceCurrent(float mA);
+
 int voltageToPercentage(int millivolts);
 
 /* Formatting helpers for labels (buffer size >= 16 recommended) */

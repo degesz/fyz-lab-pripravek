@@ -1,5 +1,6 @@
 #include "display.h"
 #include "actions.h"
+#include "./scope.h"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 
@@ -274,10 +275,105 @@ void setup_display()
 
 float VoltageSet = 0;
 float CurrentSet = 0;
+SettingMode currentMode = MODE_IDLE;
+
+static void setConverterOutputEnabled(bool enabled)
+{
+  if (enabled == converter.enabled)
+  {
+    return;
+  }
+
+  if (enabled)
+  {
+    converter.enable();
+    converter.update();
+    return;
+  }
+
+  converter.disable();
+}
+
+static void handleOutputEnableChanged(lv_event_t *e)
+{
+  lv_obj_t *target = lv_event_get_target_obj(e);
+  setConverterOutputEnabled(lv_obj_has_state(target, LV_STATE_CHECKED));
+}
+
+static void enterVoltageSettingMode()
+{
+  if (currentMode != MODE_IDLE)
+  {
+    return;
+  }
+
+  currentMode = MODE_VOLTAGE_SETTING;
+  encoder.clearCount();
+}
+
+static void enterCurrentSettingMode()
+{
+  if (currentMode != MODE_IDLE)
+  {
+    return;
+  }
+
+  currentMode = MODE_CURRENT_SETTING;
+  encoder.clearCount();
+}
+
+static void handleVoltageButtonPressed(lv_event_t *e)
+{
+  LV_UNUSED(e);
+  enterVoltageSettingMode();
+}
+
+static void handleCurrentButtonPressed(lv_event_t *e)
+{
+  LV_UNUSED(e);
+  enterCurrentSettingMode();
+}
+
+static void handleScopeButtonPressed(lv_event_t *e)
+{
+  LV_UNUSED(e);
+  loadScreen(SCREEN_ID_SCOPE);
+}
+
+static void handleSettingsButtonPressed(lv_event_t *e)
+{
+  LV_UNUSED(e);
+  loadScreen(SCREEN_ID_SETTINGS);
+}
+
+static void handleInfoButtonPressed(lv_event_t *e)
+{
+  LV_UNUSED(e);
+  loadScreen(SCREEN_ID_INFO);
+}
+
+static void handleReturnButtonPressed(lv_event_t *e)
+{
+  LV_UNUSED(e);
+  loadScreen(SCREEN_ID_MAIN);
+}
 
 void setup_ui()
 {
   ui_init();
+  lv_obj_add_flag(objects.settings_button, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_flag(objects.scope_button, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_flag(objects.info_button, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(objects.output_enable, handleOutputEnableChanged, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(objects.voltage_button, handleVoltageButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.current_button, handleCurrentButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.settings_button, handleSettingsButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.scope_button, handleScopeButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.info_button, handleInfoButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.return_button, handleReturnButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.return_button_1, handleReturnButtonPressed, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(objects.return_button_2, handleReturnButtonPressed, LV_EVENT_CLICKED, NULL);
+  setupScopeChart();
   char buf[FORMAT_BUF_SIZE];
   formatVoltageLabel(buf, sizeof(buf), converter.voltage);
   lv_label_set_text(objects.v_set, buf);
@@ -287,8 +383,6 @@ void setup_ui()
   CurrentSet = converter.current;
   lv_obj_set_pos(objects.overpower_alert, OVERPOWER_ALERT_HIDDEN_X, OVERPOWER_ALERT_HIDDEN_Y);
 }
-
-SettingMode currentMode = MODE_IDLE;
 
 void handleUserInput()
 {
@@ -300,26 +394,18 @@ void handleUserInput()
     if (btn3ShortPressed)
     {
       btn3ShortPressed = false;
-      currentMode = MODE_VOLTAGE_SETTING;
+      enterVoltageSettingMode();
     }
     if (btn3LongPressed)
     {
       btn3LongPressed = false;
-      currentMode = MODE_CURRENT_SETTING;
+      enterCurrentSettingMode();
     }
 
     if (encoderLongPressed)
     {
       encoderLongPressed = false;
-      if (converter.enabled)
-      {
-        converter.disable();
-      }
-      else
-      {
-        converter.enable();
-        converter.update();
-      }
+      setConverterOutputEnabled(!converter.enabled);
     }
     if (encoderShortPressed)
     {
@@ -544,16 +630,6 @@ void drawCalibrationPoint(int16_t x, int16_t y)
   tft.fillCircle(x, y, 4, TFT_RED);
 }
 
-//  // Example of how to use calibration data later:
-//  int16_t touchToPixelX(uint16_t rawX)
-//  {
-//    return map(rawX, calData.minX - 20, calData.maxX + 5, 0, TFT_VER_RES);
-//  }
-//  
-//  int16_t touchToPixelY(uint16_t rawY)
-//  {
-//    return map(rawY, calData.minY - 20, calData.maxY + 20, 0, TFT_HOR_RES);
-//  }
 
 
 int voltageToPercentage(int millivolts)
@@ -595,7 +671,7 @@ void formatCurrentLabel(char *buf, size_t size, float mA)
   if (mA < 1000)
     snprintf(buf, size, "%.0f mA", (double)mA);
   else
-    snprintf(buf, size, "%.2f mA", (double)(mA / 1000.0));
+    snprintf(buf, size, "%.2f A", (double)(mA / 1000.0));
 }
 
 void formatCurrentLabelEditing(char *buf, size_t size, float mA)
@@ -603,7 +679,7 @@ void formatCurrentLabelEditing(char *buf, size_t size, float mA)
   if (mA < 1000)
     snprintf(buf, size, ">%.0f mA<", (double)mA);
   else
-    snprintf(buf, size, ">%.2f mA<", (double)(mA / 1000.0));
+    snprintf(buf, size, ">%.2f A<", (double)(mA / 1000.0));
 }
 
 void formatVoltageReadout(char *buf, size_t size, float v)
@@ -622,27 +698,38 @@ void formatCurrentReadout(char *buf, size_t size, float mA)
     snprintf(buf, size, "%.3f A", (double)(mA / 1000.0));
 }
 
-/*
+void setSourceVoltage(float v)
+{
+  VoltageSet = v;
+  if (VoltageSet <= 0)
+    VoltageSet = 0;
+  if (VoltageSet >= 20)
+    VoltageSet = 20;
 
+  char buf[FORMAT_BUF_SIZE];
+  formatVoltageLabel(buf, sizeof(buf), VoltageSet);
+  lv_label_set_text(objects.v_set, buf);
 
-void show_splashscreen(){
-    tft.fillScreen(TFT_BLACK);                   // Clear screen
-
-    tft.setTextColor(TFT_ORANGE, TFT_BLACK);     // Orange text
-
-    // Draw "OMG" in bold
-    tft.setFreeFont(&FreeSansBold12pt7b);
-    tft.setCursor(180, 170);
-    tft.print("OMG");
-
-    // Draw "ROBOTICS" in normal font
-    tft.setFreeFont(&FreeSans12pt7b);                        // Default font
-    tft.setCursor(240, 170);                      // Adjust X to align after OMG
-    tft.print("ROBOTICS");
-    for (int i = 0; i <= 200; i += 10) {         // Animate loading bar
-        tft.fillRect(140, 250, i, 20, TFT_GREEN);
-        delay(100);
-    }
+  converter.voltage = VoltageSet;
+  converter.update();
 }
 
-*/
+void setSourceCurrent(float mA)
+{
+  const DeviceState *dev = get_device_state();
+  int current_ceiling = (dev->power_limit_w / converter.voltage) * 1000;
+
+  CurrentSet = mA;
+  if (CurrentSet <= 0)
+    CurrentSet = 0;
+  if (CurrentSet > current_ceiling)
+    CurrentSet = current_ceiling;
+
+  char buf[FORMAT_BUF_SIZE];
+  formatCurrentLabel(buf, sizeof(buf), CurrentSet);
+  lv_label_set_text(objects.i_set, buf);
+
+  converter.current = CurrentSet;
+  converter.update();
+}
+

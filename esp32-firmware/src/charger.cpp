@@ -25,6 +25,10 @@ uint16_t read_register(uint8_t reg) {
 }
 
 void setup_charger() {
+pinMode(GPIO_NUM_41, OUTPUT);//enable BMS
+digitalWrite(GPIO_NUM_41, LOW);
+delay(10);
+
   Wire.beginTransmission(BQ25703A_ADDRESS);
   byte error = Wire.endTransmission();
 

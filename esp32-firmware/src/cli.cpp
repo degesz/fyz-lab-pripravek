@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "display.h"
 
 // Serial CLI instance (named to avoid shadowing the "cli" module)
 SimpleCLI serialCli;
@@ -57,11 +58,11 @@ void handle_cli()
       Argument current = cmd.getArg("i");
       if (!voltage.equals("NAN"))
       {
-        converter.setVoltage(voltage.getValue().toFloat());
+        setSourceVoltage(voltage.getValue().toFloat());
       }
       if (!current.equals("NAN"))
       {
-        converter.setCurrentLimit(current.getValue().toFloat());
+        setSourceCurrent(current.getValue().toFloat());
       }
     }
     else if (cmd == cmdHalt)
